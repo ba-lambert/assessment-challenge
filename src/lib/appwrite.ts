@@ -26,6 +26,7 @@ export interface AccountData {
   accountNumber?: string;
   bankName?: string;
   mobileProvider?: string;
+  $id:string;
 }
 
 export interface CategoryData {
