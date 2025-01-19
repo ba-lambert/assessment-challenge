@@ -71,6 +71,21 @@ export const budgetApi = createApi({
             },
             invalidatesTags: ['Budgets'],
         }),
+        deleteBudget: builder.mutation<void, string>({
+            async queryFn(id) {
+                try {
+                    await databases.deleteDocument(
+                        DATABASES.ID,
+                        DATABASES.BUDGETS_COLLECTION,
+                        id
+                    );
+                    return { data: undefined };
+                } catch (error) {
+                    return { error: { status: 500, data: error } };
+                }
+            },
+            invalidatesTags: ['Budgets'],
+        }),
     }),
 });
 
@@ -78,4 +93,5 @@ export const {
     useGetBudgetsQuery,
     useCreateBudgetMutation,
     useUpdateBudgetSpentMutation,
+    useDeleteBudgetMutation,
 } = budgetApi; 

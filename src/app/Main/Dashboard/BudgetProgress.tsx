@@ -2,11 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Budget } from "@/lib/services/budgetApi";
 import { useGetCategoriesQuery } from "@/lib/services/categoryApi";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RotateCcw, Trash, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useRef } from "react";
 import { AddBudgetDialog } from "./AddBudgetDialog";
 import { useUser } from "@/contexts/UserContext";
+import { Button } from "@/components/ui/button";
+import { useUpdateBudgetSpentMutation, useDeleteBudgetMutation } from "@/lib/services/budgetApi";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface BudgetProgressProps {
     budgets?: Budget[];
@@ -16,7 +24,47 @@ export const BudgetProgress = ({ budgets }: BudgetProgressProps) => {
     const { data: categories } = useGetCategoriesQuery();
     const { toast } = useToast();
     const { user } = useUser();
+    const [updateBudget] = useUpdateBudgetSpentMutation();
+    const [deleteBudget] = useDeleteBudgetMutation();
     const notifiedBudgets = useRef<Set<string>>(new Set());
+
+    const getProgressColor = (percentage: number) => {
+        if (percentage >= 100) return "bg-destructive";
+        if (percentage >= 90) return "bg-yellow-500";
+        return "bg-green-500";
+    };
+
+    const handleReset = async (budgetId: string) => {
+        try {
+            await updateBudget({ id: budgetId, spent: 0  }).unwrap();
+            toast({
+                title: "Success",
+                description: "Budget progress has been reset",
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to reset budget",
+            });
+        }
+    };
+
+    const handleDelete = async (budgetId: string) => {
+        try {
+            await deleteBudget(budgetId).unwrap();
+            toast({
+                title: "Success",
+                description: "Budget has been deleted",
+            });
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Failed to delete budget",
+            });
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -85,13 +133,35 @@ export const BudgetProgress = ({ budgets }: BudgetProgressProps) => {
                                         <AlertTriangle className="h-4 w-4 text-destructive" />
                                     )}
                                     <span className="text-sm text-muted-foreground">
-                                        ${budget.spent.toFixed(2)} / ${budget.amount.toFixed(2)}
+                                        RWF {budget.spent.toFixed(2)} / RWF {budget.amount.toFixed(2)}
                                     </span>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                onClick={() => handleReset(budget.$id)}
+                                            >
+                                                <RotateCcw className="h-4 w-4 mr-2" />
+                                                Reset Progress
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => handleDelete(budget.$id)}
+                                                className="text-destructive"
+                                            >
+                                                <Trash className="h-4 w-4 mr-2" />
+                                                Delete Budget
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             </div>
                             <Progress 
                                 value={percentage} 
-                                className={isWarning ? "text-destructive" : ""}
+                                className={getProgressColor(percentage)}
                             />
                         </div>
                     );

@@ -45,7 +45,52 @@ export const accountApi = createApi({
             },
             invalidatesTags: ['Accounts'],
         }),
+        updateAccountBalance: builder.mutation<Account, { id: string; amount: number; type: 'add' | 'subtract' }>({
+            async queryFn({ id, amount, type }) {
+                try {
+                    const account = await databases.getDocument(
+                        DATABASES.ID,
+                        DATABASES.ACCOUNTS_COLLECTION,
+                        id
+                    );
+                    const newBalance = type === 'add' 
+                        ? account.balance + amount 
+                        : account.balance - amount;
+
+                    const response = await databases.updateDocument(
+                        DATABASES.ID,
+                        DATABASES.ACCOUNTS_COLLECTION,
+                        id,
+                        { balance: newBalance }
+                    );
+                    return { data: response as unknown as Account };
+                } catch (error) {
+                    return { error: { status: 500, data: error } };
+                }
+            },
+            invalidatesTags: ['Accounts'],
+        }),
+        deleteAccount: builder.mutation<void, string>({
+            async queryFn(id) {
+                try {
+                    await databases.deleteDocument(
+                        DATABASES.ID,
+                        DATABASES.ACCOUNTS_COLLECTION,
+                        id
+                    );
+                    return { data: undefined };
+                } catch (error) {
+                    return { error: { status: 500, data: error } };
+                }
+            },
+            invalidatesTags: ['Accounts'],
+        }),
     }),
 });
 
-export const { useGetAccountsQuery, useUpdateAccountMutation } = accountApi; 
+export const { 
+  useGetAccountsQuery, 
+  useUpdateAccountMutation,
+  useUpdateAccountBalanceMutation,
+  useDeleteAccountMutation 
+} = accountApi; 

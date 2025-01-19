@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { account } from '@/lib/appwrite';
 import { Models } from 'appwrite';
 
@@ -11,10 +11,22 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAuth();
-  }, []);
+
+    const unsubscribe = account.client.subscribe('account', (response) => {
+      if (response.events.includes('account.delete')) {
+        setIsAuthenticated(false);
+        navigate('/auth/signin');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [navigate]);
 
   console.log(user)
 
@@ -25,6 +37,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       setIsAuthenticated(true);
     } catch (error) {
       setIsAuthenticated(false);
+      navigate('/auth/signin');
     }
   };
 

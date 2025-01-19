@@ -8,12 +8,16 @@ export interface Transaction extends TransactionData {
     $createdAt: string;
     category?: {
         name: string;
-        $id: string;
+        [key: string]: any;
     };
     account?: {
         name: string;
-        $id: string;
+        [key: string]: any;
     };
+    toAccount?: {
+        name: string;
+        [key: string]: any;
+    } | null;
 }
 
 export const transactionApi = createApi({
@@ -33,7 +37,35 @@ export const transactionApi = createApi({
                             Query.orderDesc('date')
                         ]
                     );
-                    return { data: response.documents as unknown as Transaction[] };
+                    const categoryIds = [...new Set(response.documents.map(doc => doc.categoryId))];
+                    const accountIds = [...new Set(response.documents.map(doc => doc.accountId))];
+                    const toAccountIds = [...new Set(response.documents.map(doc => doc.toAccountId).filter(Boolean))];
+
+                    // Fetch categories and accounts in parallel
+                    const [categories, accounts] = await Promise.all([
+                        databases.listDocuments(
+                            DATABASES.ID,
+                            DATABASES.CATEGORIES_COLLECTION,
+                            [Query.equal('$id', categoryIds)]
+                        ),
+                        databases.listDocuments(
+                            DATABASES.ID,
+                            DATABASES.ACCOUNTS_COLLECTION,
+                            [Query.equal('$id', [...accountIds, ...toAccountIds])]
+                        ),
+                    ]);
+
+                    const categoryMap = new Map(categories.documents.map(cat => [cat.$id, cat]));
+                    const accountMap = new Map(accounts.documents.map(acc => [acc.$id, acc]));
+
+                    const populatedTransactions = response.documents.map(transaction => ({
+                        ...transaction,
+                        category: categoryMap.get(transaction.categoryId),
+                        account: accountMap.get(transaction.accountId),
+                        toAccount: transaction.toAccountId ? accountMap.get(transaction.toAccountId) : null
+                    }));
+
+                    return { data: populatedTransactions as unknown as Transaction[] };
                 } catch (error) {
                     return { error: { status: 500, data: error } };
                 }

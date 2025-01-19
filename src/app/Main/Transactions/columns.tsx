@@ -23,6 +23,10 @@ export const columns: ColumnDef<Transaction>[] = [
         cell: ({ row }) => new Date(row.original.date).toLocaleDateString(),
     },
     {
+        accessorKey: "description",
+        header: "Description",
+    },
+    {
         accessorKey: "type",
         header: "Type",
         cell: ({ row }) => <TransactionTypeBadge type={row.original.type} />,
@@ -45,9 +49,5 @@ export const columns: ColumnDef<Transaction>[] = [
         accessorKey: "account",
         header: "Account",
         cell: ({ row }) => row.original.account?.name,
-    },
-    {
-        accessorKey: "description",
-        header: "Description",
     },
 ]; 

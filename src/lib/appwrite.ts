@@ -57,8 +57,6 @@ export const accountService = {
             } catch (error) {
                 
             }
-
-            // Create new session only if no active session exists
             const session = await account.createEmailPasswordSession(email, password);
             return session;
         } catch (error) {
@@ -94,6 +92,7 @@ export const accountService = {
     signOut: async () => {
         try {
             await account.deleteSession('current');
+            window.location.href = '/auth/signin';
         } catch (error) {
             throw error;
         }

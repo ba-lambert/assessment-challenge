@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { Plus } from "lucide-react";
+import { Plus, Wallet, Building2, Phone, MoreVertical, Trash } from "lucide-react";
 import { accountService, AccountData, AccountType } from "@/lib/appwrite";
 import { BreadcrumbComponent } from "@/components/BreadCrumb";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useDeleteAccountMutation } from "@/lib/services/accountApi";
 
 const accountSchema = yup.object({
   name: yup.string().required("Account name is required"),
@@ -61,6 +78,9 @@ export default function Accounts() {
   const [accounts, setAccounts] = useState<AccountData[]>([]);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteAccount,{isLoading:deletingLoading}] = useDeleteAccountMutation()
 
   const form = useForm<AccountFormData>({
     resolver: yupResolver(accountSchema),
@@ -109,6 +129,48 @@ export default function Accounts() {
         variant: "destructive",
         title: "Error",
         description: "Failed to create account",
+      });
+    }
+  };
+
+  const getAccountIcon = (type: AccountType) => {
+    switch (type) {
+      case 'bank':
+        return <Building2 className="h-5 w-5 text-blue-500" />;
+      case 'mobile_money':
+        return <Phone className="h-5 w-5 text-green-500" />;
+      default:
+        return <Wallet className="h-5 w-5 text-yellow-500" />;
+    }
+  };
+
+  const getAccountColor = (type: AccountType) => {
+    switch (type) {
+      case 'bank':
+        return 'border-l-4 border-blue-500';
+      case 'mobile_money':
+        return 'border-l-4 border-green-500';
+      default:
+        return 'border-l-4 border-yellow-500';
+    }
+  };
+
+
+  const handleDeleteAccount = async () => {
+    try {
+      if (!selectedAccount) return;
+      await deleteAccount(selectedAccount);
+      toast({
+        title: "Success",
+        description: "Account deleted successfully",
+      });
+      setIsDeleteDialogOpen(false);
+      loadAccounts();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete account",
       });
     }
   };
@@ -230,7 +292,7 @@ export default function Accounts() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="mpesa">M-Pesa</SelectItem>
+                              <SelectItem value="mtn">MTN</SelectItem>
                               <SelectItem value="airtel">Airtel Money</SelectItem>
                               <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
@@ -278,22 +340,46 @@ export default function Accounts() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((account,key) => (
-            <Card key={key}>
-              <CardHeader>
-                <CardTitle>{account.name}</CardTitle>
-                <CardDescription>
-                  {account.type === "bank"
-                    ? account.bankName
-                    : account.type === "mobile_money"
-                    ? account.mobileProvider
-                    : "Cash Account"}
-                </CardDescription>
+          {accounts.map((account:any,index) => (
+            <Card key={index} className={`${getAccountColor(account.type)} shadow-md hover:shadow-lg transition-shadow`}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {getAccountIcon(account.type)}
+                  <div>
+                    <CardTitle>{account.name}</CardTitle>
+                    <CardDescription>
+                      {account.type === "bank"
+                        ? account.bankName
+                        : account.type === "mobile_money"
+                        ? account.mobileProvider
+                        : "Cash Account"}
+                    </CardDescription>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      className="bg-red-500 text-white"
+                      onClick={() => {
+                        setSelectedAccount(account.$id);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      Delete Account
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold">
-                    ${account.balance.toFixed(2)}
+                    RWF {account.balance.toFixed(2)}
                   </div>
                   {account.description && (
                     <p className="text-sm text-muted-foreground">
@@ -313,6 +399,27 @@ export default function Accounts() {
           ))}
         </div>
       )}
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the account
+              and all its data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {deletingLoading ? '...deleting' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
