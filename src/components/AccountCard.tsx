@@ -75,13 +75,6 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
               {account.description}
             </p>
           )}
-          {(account.accountNumber || account.type === "mobile_money") && (
-            <p className="text-sm">
-              {account.type === "mobile_money"
-                ? `Phone: ${account.accountNumber}`
-                : `Acc: ${account.accountNumber}`}
-            </p>
-          )}
         </div>
       </CardContent>
     </Card>
