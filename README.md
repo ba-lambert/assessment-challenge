@@ -2,15 +2,15 @@
 <!--   <img src="https://avatars.githubusercontent.com/u/109437069" alt="Profile" width="100" height="100" style="border-radius: 50%"/> -->
   <h1>🌟 EXPENSES TRACKER</h1>
 </div>
+
 [![Netlify Status](https://api.netlify.com/api/v1/badges/536d925a-119f-4e58-88af-692b685eb4af/deploy-status)](https://app.netlify.com/sites/taskforce-challenge/deploys)
 
----
 
 ## 🌐 Live Demo
 
 Access the live application here: [Expenses Tracker Live](https://taskforce-challenge.netlify.app)
 
----
+
 <div align="center">
   <table>
     <tr>
