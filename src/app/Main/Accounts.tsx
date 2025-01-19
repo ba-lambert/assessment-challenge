@@ -57,7 +57,7 @@ export default function Accounts() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {accounts.map((account) => (
+          {accounts && accounts?.map((account) => (
             <AccountCard 
               key={account.$id} 
               account={account} 
